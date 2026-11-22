@@ -110,6 +110,12 @@ window.addEventListener('pagehide', () => {
 });
 window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
 
+function waitForSensor() {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => render(null, false,
+    'Sem sinal recente do sensor. Confira se a câmera está aberta e se este link é o salvo no sensor.'), 6000);
+}
+
 const secret = location.hash.slice(1);
 if (/^[a-f0-9]{64}$/.test(secret)) {
   $('connection').textContent = 'Conectando…';
@@ -121,11 +127,12 @@ if (/^[a-f0-9]{64}$/.test(secret)) {
         render(null, false, 'Conexão interrompida. Reconectando…');
       } else if ($('level').value === '—') {
         $('connection').textContent = 'Conectado. Aguardando o sensor…';
+        waitForSensor();
       }
     }, (reading) => {
       clearTimeout(timeout);
-      render(reading.level, reading.alarm, reading.level === null ? 'Sensor sem leitura válida.' : 'Recebendo leitura do sensor.');
-      timeout = setTimeout(() => render(null, false, 'Sem sinal recente do sensor.'), 6000);
+      render(reading.level, reading.alarm, reading.level === null ? 'Sensor conectado. Aguardando calibração ou leitura válida.' : 'Recebendo leitura do sensor.');
+      waitForSensor();
     });
     if (leaving) connection.close();
   } catch {

@@ -18,6 +18,14 @@ let cameraRequest = 0;
 let opening = false;
 let recent = [];
 let lastVideoTime = null;
+const pairingKey = storageKey + ':pairing';
+let pairingSecret;
+try {
+  pairingSecret = localStorage.getItem(pairingKey);
+} catch {
+  // O link ainda pode ser usado enquanto a página estiver aberta.
+}
+if (!/^[a-f0-9]{64}$/.test(pairingSecret ?? '')) pairingSecret = null;
 let pairing, heartbeat;
 let pairingGeneration = 0;
 let remoteLevel = null;
@@ -343,18 +351,31 @@ document.addEventListener('visibilitychange', () => {
   resetAlarm();
   if (!document.hidden) void keepScreenOn();
 });
-function stopPairing() {
+function disconnectPairing() {
   pairingGeneration++;
   clearInterval(heartbeat);
   pairing?.close();
   pairing = null;
+}
+
+function revokePairing() {
+  disconnectPairing();
+  pairingSecret = null;
+  try {
+    localStorage.removeItem(pairingKey);
+  } catch {
+    status('pair-status', 'Compartilhamento parado nesta tela. Limpe os dados do site para apagar o link salvo.');
+  }
   $('pair').textContent = 'Gerar link de alerta';
   $('pair-link').value = '';
   $('pair-link').hidden = $('copy-pair').hidden = true;
-  status('pair-status', 'Compartilhamento encerrado.');
+  if (!$('pair-status').textContent.startsWith('Compartilhamento parado')) {
+    status('pair-status', 'Link revogado neste sensor.');
+  }
 }
 
 async function sendReading() {
+  if (!stream || opening || document.hidden) return;
   try {
     await pairing?.send(drag || document.hidden ? null : remoteLevel, remoteAlarm && !drag && !document.hidden);
   } catch {
@@ -362,17 +383,19 @@ async function sendReading() {
   }
 }
 
-$('pair').addEventListener('click', async () => {
-  if (!$('pair-link').hidden) {
-    stopPairing();
-    return;
-  }
+function showPairingLink() {
+  const link = new URL('./alerta.html', location.href);
+  link.hash = pairingSecret;
+  $('pair-link').value = link.href;
+  $('pair-link').hidden = $('copy-pair').hidden = false;
+  $('pair').textContent = 'Revogar link de alerta';
+}
+
+async function startPairing() {
   const generation = ++pairingGeneration;
-  $('pair').disabled = true;
   status('pair-status', 'Conectando ao canal de alerta…');
   try {
-    const secret = newPairing();
-    const connection = await connectPairing(secret, (online) => {
+    const connection = await connectPairing(pairingSecret, (online) => {
       if (generation !== pairingGeneration) return;
       status('pair-status', online ? 'Canal de alerta conectado.' : 'Canal indisponível. Reconectando…');
     });
@@ -382,17 +405,36 @@ $('pair').addEventListener('click', async () => {
     }
     pairing = connection;
     heartbeat = setInterval(sendReading, 1500);
-    const link = new URL('./alerta.html', location.href);
-    link.hash = secret;
-    $('pair-link').value = link.href;
-    $('pair-link').hidden = $('copy-pair').hidden = false;
-    $('pair').textContent = 'Encerrar compartilhamento';
   } catch {
-    status('pair-status', 'Não foi possível iniciar o canal. Confira a internet e tente de novo.');
-  } finally {
-    $('pair').disabled = false;
+    if (generation === pairingGeneration) {
+      status('pair-status', 'Falha ao conectar. Reabra o sensor com internet para tentar novamente.');
+    }
+  }
+}
+
+$('pair').addEventListener('click', () => {
+  if (pairingSecret) {
+    revokePairing();
+    return;
+  }
+  try {
+    pairingSecret = newPairing();
+    showPairingLink();
+    void startPairing();
+    try {
+      localStorage.setItem(pairingKey, pairingSecret);
+    } catch {
+      status('pair-status', 'O navegador não permitiu salvar o link. Ele vale nesta sessão.');
+    }
+  } catch {
+    status('pair-status', 'Não foi possível gerar o link. Abra o sensor por HTTPS.');
   }
 });
+
+if (pairingSecret) {
+  showPairingLink();
+  void startPairing();
+}
 
 $('copy-pair').addEventListener('click', async () => {
   try {
@@ -405,8 +447,11 @@ $('copy-pair').addEventListener('click', async () => {
 });
 
 window.addEventListener('pagehide', () => {
-  stopPairing();
+  disconnectPairing();
   stopCamera();
+});
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted && pairingSecret && !pairing) void startPairing();
 });
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
