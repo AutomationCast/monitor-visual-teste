@@ -6,26 +6,39 @@ let latestAlarm = false;
 let silenced = false;
 let soundEnabled = false;
 let leaving = false;
+let testTone;
+
+function playTone() {
+  const oscillator = audio.createOscillator();
+  oscillator.frequency.value = 740;
+  const volume = audio.createGain();
+  volume.gain.value = 0.16;
+  oscillator.connect(volume).connect(audio.destination);
+  oscillator.addEventListener('ended', () => {
+    oscillator.disconnect();
+    volume.disconnect();
+  }, { once: true });
+  oscillator.start();
+  return oscillator;
+}
 
 function refreshSound() {
-  if ((!latestAlarm || silenced || document.hidden || !soundEnabled) && tone) {
+  if ((!latestAlarm || silenced || document.hidden || !soundEnabled || audio?.state !== 'running') && tone) {
     tone.stop();
     tone.disconnect();
     tone = null;
   }
   if (latestAlarm && !silenced && !document.hidden && soundEnabled && !tone && audio.state === 'running') {
-    tone = audio.createOscillator();
-    tone.frequency.value = 740;
-    const volume = audio.createGain();
-    volume.gain.value = 0.16;
-    tone.connect(volume).connect(audio.destination);
-    tone.addEventListener('ended', () => volume.disconnect(), { once: true });
-    tone.start();
+    testTone?.stop();
+    tone = playTone();
   }
+  const ready = audio?.state === 'running' && soundEnabled;
+  $('enable').disabled = ready || !secret;
+  $('test-sound').disabled = !secret || Boolean(tone);
   $('silence').disabled = !latestAlarm || silenced;
   $('alarm-status').textContent = latestAlarm
     ? silenced ? 'Alarme silenciado.' : tone ? 'Alarme remoto ativo.' : 'Alarme remoto ativo. Ative o som.'
-    : soundEnabled ? 'Som ativado.' : '';
+    : ready ? 'Som ativado.' : '';
 }
 
 async function keepScreenOn() {
@@ -39,17 +52,35 @@ async function keepScreenOn() {
   }
 }
 
-$('enable').addEventListener('click', async () => {
+async function enableSound() {
   try {
-    audio ??= new AudioContext();
+    if (!audio) {
+      audio = new AudioContext();
+      audio.addEventListener('statechange', refreshSound);
+    }
     await audio.resume();
     soundEnabled = audio.state === 'running';
-    $('enable').disabled = soundEnabled;
     refreshSound();
     void keepScreenOn();
+    return soundEnabled;
   } catch {
-    $('alarm-status').textContent = 'Som indisponível. Tente ativá-lo novamente.';
+    $('sound-test-status').textContent = 'Som indisponível. Tente ativar novamente.';
+    return false;
   }
+}
+
+$('enable').addEventListener('click', async () => {
+  $('sound-test-status').textContent = '';
+  await enableSound();
+});
+$('test-sound').addEventListener('click', async () => {
+  if (!(await enableSound()) || tone) return;
+  testTone?.stop();
+  const beep = playTone();
+  testTone = beep;
+  beep.stop(audio.currentTime + 0.8);
+  beep.addEventListener('ended', () => { if (testTone === beep) testTone = null; }, { once: true });
+  $('sound-test-status').textContent = 'Se não ouviu o toque, aumente o volume de mídia do Android.';
 });
 $('silence').addEventListener('click', () => {
   silenced = true;
@@ -66,11 +97,13 @@ function render(level, alarm, status) {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (document.hidden) testTone?.stop();
   refreshSound();
   if (!document.hidden && soundEnabled) void keepScreenOn();
 });
 window.addEventListener('pagehide', () => {
   leaving = true;
+  testTone?.stop();
   clearTimeout(timeout);
   connection?.close();
   render(null, false, 'Painel encerrado.');
@@ -80,7 +113,7 @@ window.addEventListener('pageshow', (event) => { if (event.persisted) location.r
 const secret = location.hash.slice(1);
 if (/^[a-f0-9]{64}$/.test(secret)) {
   $('connection').textContent = 'Conectando…';
-  $('enable').disabled = false;
+  $('enable').disabled = $('test-sound').disabled = false;
   try {
     connection = await connectPairing(secret, (online) => {
       if (!online) {
