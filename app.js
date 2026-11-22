@@ -100,7 +100,7 @@ $('test').addEventListener('click', async () => {
     testTimeout = setTimeout(() => {
       testTimeout = undefined;
       stopSound();
-      status('alarm-status', 'O alarme toca após 30 s acima do limite.');
+      status('alarm-status', 'Alarme local após 30 s acima do limite.');
     }, 2000);
   }
 });
@@ -114,7 +114,7 @@ $('silence').addEventListener('click', () => {
 function resetAlarm() {
   alarm.reset();
   stopSound();
-  status('alarm-status', 'O alarme toca após 30 s acima do limite.');
+  status('alarm-status', 'Alarme local após 30 s acima do limite.');
 }
 
 function showLevel(level) {
@@ -206,7 +206,7 @@ camera.addEventListener('click', async () => {
     opening = false;
     $('placeholder').hidden = true;
     camera.textContent = 'Encerrar monitoramento';
-    status('camera-status', 'Arraste do canto superior ao canto inferior do interior do copo vazio.');
+    status('camera-status', 'Selecione uma faixa vertical no centro do vidro, evitando a moldura e os reflexos das bordas.');
     sampler = setInterval(sample, 250);
     void keepScreenOn();
   } catch (error) {
@@ -270,7 +270,7 @@ preview.addEventListener('pointerup', (event) => {
   if (box.w * bounds.width >= 20 && box.h * bounds.height >= 30) {
     region = box;
     clearReading();
-    status('camera-status', 'Com o copo vazio e parado, toque em Calibrar copo vazio.');
+    status('camera-status', 'Com a câmera fixa e o visor vazio, toque em Calibrar visor vazio.');
   }
   drawRegion();
 });
@@ -298,7 +298,7 @@ $('calibrate').addEventListener('click', () => {
   }
   clearReading();
   reference = baseline.data;
-  status('camera-status', 'Calibrado. Mantenha a câmera e o copo na mesma posição.');
+  status('camera-status', 'Calibrado. Mantenha a câmera fixa e acompanhe o nível na faixa selecionada.');
 });
 
 function sample() {
@@ -325,7 +325,7 @@ function sample() {
     stopSound();
     status('alarm-status', filtered === null ? 'Leitura instável. Confira o enquadramento e a iluminação.'
       : alarm.since !== null ? 'Acima do limite há ' + Math.floor(elapsed / 1000) + ' de 30 s.'
-        : 'O alarme toca após 30 s acima do limite.');
+        : 'Alarme local após 30 s acima do limite.');
   }
 }
 

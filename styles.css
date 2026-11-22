@@ -11,6 +11,7 @@ main { max-width: 68rem; margin: auto; padding: 1rem; }
 header, .buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
 header { justify-content: space-between; margin-bottom: 1rem; }
 h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.4rem); letter-spacing: -.045em; }
+.subtitle { margin-top: .15rem; }
 .layout { display: grid; gap: 1rem; }
 @media (min-width: 48rem) { .layout { grid-template-columns: 3fr 2fr; align-items: start; } }
 section { min-width: 0; padding: .9rem; border: 1px solid #38505a; background: #182a33; border-radius: 1rem; }

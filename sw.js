@@ -1,4 +1,4 @@
-const release = '0.1.0';
+const release = '0.2.0';
 const prefix = 'monitor-visual-shell:' + self.registration.scope + ':';
 const cacheName = prefix + release;
 const appFiles = [
