@@ -428,7 +428,7 @@ if ('serviceWorker' in navigator) {
     .then((registration) => {
       function reportUpdate() {
         if (registration.waiting && navigator.serviceWorker.controller) {
-          offlineStatus.textContent = 'Atualização pronta. Feche todas as abas do app e reabra para usar a nova versão.';
+          status('offline-status', 'Atualização pronta. Feche o app e suas abas e reabra para usar a nova versão.');
         }
       }
 
@@ -438,6 +438,6 @@ if ('serviceWorker' in navigator) {
       });
     })
     .catch(() => {
-      offlineStatus.textContent = 'Modo offline indisponível. Use o aplicativo com conexão.';
+      status('offline-status', 'Modo offline indisponível. Use o aplicativo com conexão.');
     });
 }

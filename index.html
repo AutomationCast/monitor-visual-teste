@@ -20,6 +20,16 @@
       </div>
       <button id="install" hidden>Instalar app</button>
     </header>
+    <section class="pairing" aria-label="Segundo celular">
+      <div class="buttons">
+        <button id="pair">Gerar link de alerta</button>
+        <button id="copy-pair" hidden>Copiar link</button>
+      </div>
+      <p>Envie o link em privado ao segundo celular para acompanhar o nível e o alarme.</p>
+      <input id="pair-link" type="url" aria-label="Link de pareamento" readonly hidden>
+      <p id="pair-status" role="status"></p>
+    </section>
+    <p id="offline-status" role="status"></p>
     <div class="layout">
       <section aria-label="Câmera">
         <div id="preview">
@@ -46,16 +56,6 @@
           <button id="silence" disabled>Silenciar</button>
         </div>
         <details>
-          <summary>Segundo celular</summary>
-          <p>Gere um link e envie em privado a quem vai acompanhar. O painel recebe o nível e o alarme enquanto o sensor estiver aberto.</p>
-          <div class="buttons">
-            <button id="pair">Gerar link de alerta</button>
-            <button id="copy-pair" hidden>Copiar link</button>
-          </div>
-          <input id="pair-link" type="url" aria-label="Link de pareamento" readonly hidden>
-          <p id="pair-status" role="status"></p>
-        </details>
-        <details>
           <summary>Ajuste da leitura</summary>
           <label for="sensitivity">Diferença mínima de cor <output id="sensitivity-value">18</output></label>
           <input id="sensitivity" type="range" min="6" max="80" value="18">
@@ -63,7 +63,6 @@
         </details>
       </section>
     </div>
-    <p id="offline-status" role="status"></p>
   </main>
 </body>
 </html>

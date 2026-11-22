@@ -37,3 +37,7 @@ summary { cursor: pointer; }
 details label { margin-top: .7rem; }
 
 #pair-link { width: 100%; margin-top: .65rem; padding: .55rem; font: inherit; }
+
+.pairing { margin-bottom: 1rem; }
+.pairing .buttons { margin-top: 0; }
+#offline-status:not(:empty) { margin-bottom: 1rem; }
