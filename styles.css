@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+  font: 1rem/1.5 system-ui, sans-serif;
+  color: #eef8f5;
+  background: #101e24;
+  accent-color: #72e3c2;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+main { max-width: 68rem; margin: auto; padding: 1rem; }
+header, .buttons { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
+header { justify-content: space-between; margin-bottom: 1rem; }
+h1 { margin: 0; font-size: clamp(1.6rem, 5vw, 2.4rem); letter-spacing: -.045em; }
+.layout { display: grid; gap: 1rem; }
+@media (min-width: 48rem) { .layout { grid-template-columns: 3fr 2fr; align-items: start; } }
+section { min-width: 0; padding: .9rem; border: 1px solid #38505a; background: #182a33; border-radius: 1rem; }
+#preview { position: relative; overflow: hidden; border-radius: .75rem; background: #091317; touch-action: none; user-select: none; }
+video { display: block; width: 100%; aspect-ratio: var(--ratio, 4 / 3); }
+#placeholder { position: absolute; inset: 0; display: grid; place-items: center; }
+#area { position: absolute; pointer-events: none; outline: 2px solid #72e3c2; background: #72e3c21a; }
+#line { position: absolute; width: 100%; height: 2px; background: #72e3c2; box-shadow: 0 0 3px #000; }
+.buttons { margin-top: .8rem; }
+button { min-height: 44px; padding: .45rem .8rem; border-radius: .65rem; border: 1px solid #67828a; background: #233c46; color: inherit; font: inherit; cursor: pointer; }
+button.primary { background: #72e3c2; color: #102922; border-color: #72e3c2; font-weight: 700; }
+button:disabled { opacity: .5; cursor: default; }
+label { display: block; font-weight: 650; }
+label output { float: right; }
+#level { display: block; font-weight: 750; font-size: 3.75rem; letter-spacing: -.08em; line-height: 1.2; }
+progress, input[type=range] { width: 100%; }
+input[type=range] { min-height: 30px; margin-inline: 0; }
+progress { margin: .4rem 0 1rem; }
+p { color: #c2d4d9; margin: .7rem 0 0; }
+p:empty { display: none; }
+details { margin-top: 1rem; border-top: 1px solid #38505a; padding-top: .7rem; }
+summary { cursor: pointer; }
+details label { margin-top: .7rem; }

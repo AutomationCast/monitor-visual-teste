@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101e24">
+  <title>Monitor Visual</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Monitor Visual</h1>
+      <button id="install" hidden>Instalar app</button>
+    </header>
+    <div class="layout">
+      <section aria-label="Câmera">
+        <div id="preview">
+          <video id="video" muted playsinline></video>
+          <span id="placeholder">Câmera desligada</span>
+          <div id="area" hidden><div id="line" hidden></div></div>
+        </div>
+        <div class="buttons">
+          <button id="camera" class="primary">Abrir câmera</button>
+          <button id="calibrate" disabled>Calibrar copo vazio</button>
+        </div>
+        <p id="camera-status" role="status">Abra a câmera e arraste sobre o vídeo para selecionar o interior do copo.</p>
+        <p id="wake-status" role="status"></p>
+      </section>
+      <section class="controls" aria-label="Nível e alarme">
+        <label for="level">Nível estimado</label>
+        <output id="level">—</output>
+        <progress id="meter" max="100" value="0" aria-label="Nível estimado"></progress>
+        <label for="limit">Limite do alarme <output id="limit-value">80%</output></label>
+        <input id="limit" type="range" min="0" max="100" value="80">
+        <p id="alarm-status" role="status">O alarme toca após 30 s acima do limite.</p>
+        <div class="buttons">
+          <button id="test">Testar alarme</button>
+          <button id="silence" disabled>Silenciar</button>
+        </div>
+        <details>
+          <summary>Ajuste da leitura</summary>
+          <label for="sensitivity">Diferença mínima de cor <output id="sensitivity-value">24</output></label>
+          <input id="sensitivity" type="range" min="6" max="80" value="24">
+          <p>Reduza se o leite passar despercebido. Aumente se o copo vazio acusar nível. Mantenha câmera, copo e iluminação fixos e recalibre após mover o enquadramento.</p>
+        </details>
+      </section>
+    </div>
+    <p id="offline-status" role="status"></p>
+  </main>
+</body>
+</html>
