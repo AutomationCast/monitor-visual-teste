@@ -109,6 +109,9 @@ window.addEventListener('pagehide', () => {
   render(null, false, 'Painel encerrado.');
 });
 window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+window.addEventListener('hashchange', () => {
+  if (/^[a-f0-9]{64}$/.test(location.hash.slice(1))) location.reload();
+});
 
 function waitForSensor() {
   clearTimeout(timeout);
@@ -116,7 +119,20 @@ function waitForSensor() {
     'Sem sinal recente do sensor. Confira se a câmera está aberta e se este link é o salvo no sensor.'), 6000);
 }
 
-const secret = location.hash.slice(1);
+const receiverKey = 'monitor-visual:receiver:v1:' + new URL('./', location.href).pathname;
+const incomingSecret = location.hash.slice(1);
+let secret = /^[a-f0-9]{64}$/.test(incomingSecret) ? incomingSecret : '';
+try {
+  if (secret) {
+    localStorage.setItem(receiverKey, secret);
+    history.replaceState(null, '', new URL('./alerta.html', location.href));
+  } else if (!incomingSecret) {
+    secret = localStorage.getItem(receiverKey) ?? '';
+  }
+} catch {
+  // O link completo continua funcionando quando o navegador não permite salvar o pareamento.
+}
+
 if (/^[a-f0-9]{64}$/.test(secret)) {
   $('connection').textContent = 'Conectando…';
   $('enable').disabled = $('test-sound').disabled = false;
@@ -133,6 +149,9 @@ if (/^[a-f0-9]{64}$/.test(secret)) {
       clearTimeout(timeout);
       render(reading.level, reading.alarm, reading.level === null ? 'Sensor conectado. Aguardando calibração ou leitura válida.' : 'Recebendo leitura do sensor.');
       waitForSensor();
+    }, () => {
+      clearTimeout(timeout);
+      render(null, false, 'Chegou um sinal fora do horário esperado. Ative data e hora automáticas nos dois celulares.');
     });
     if (leaving) connection.close();
   } catch {

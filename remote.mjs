@@ -1,5 +1,5 @@
 const broker = 'wss://broker.emqx.io:8084/mqtt';
-const maxAge = 8000;
+const maxAge = 15000;
 let library;
 
 function mqttLibrary() {
@@ -25,7 +25,7 @@ export function newPairing() {
   return toHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
-export async function connectPairing(secret, onStatus, onReading) {
+export async function connectPairing(secret, onStatus, onReading, onClockMismatch) {
   if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error('Pareamento inválido');
   const bytes = Uint8Array.from(secret.match(/../g), (hex) => Number.parseInt(hex, 16));
   const key = await crypto.subtle.importKey('raw', bytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
@@ -51,9 +51,12 @@ export async function connectPairing(secret, onStatus, onReading) {
         { name: 'AES-GCM', iv: message.subarray(0, 12) }, key, message.subarray(12));
       const reading = JSON.parse(new TextDecoder().decode(payload));
       if (closed || !Number.isSafeInteger(reading.at) || reading.at <= latest
-        || Math.abs(Date.now() - reading.at) > maxAge
         || (reading.level !== null && (!Number.isInteger(reading.level) || reading.level < 0 || reading.level > 100))
         || typeof reading.alarm !== 'boolean' || (reading.alarm && reading.level === null)) return;
+      if (Math.abs(Date.now() - reading.at) > maxAge) {
+        onClockMismatch?.();
+        return;
+      }
       latest = reading.at;
       onReading(reading);
     } catch {
