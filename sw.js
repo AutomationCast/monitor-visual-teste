@@ -1,9 +1,9 @@
-const release = '0.2.0';
+const release = '0.3.0';
 const prefix = 'monitor-visual-shell:' + self.registration.scope + ':';
 const cacheName = prefix + release;
 const appFiles = [
   './index.html', './styles.css', './app.js', './manifest.webmanifest',
-  './level.mjs', './icon-192.png', './icon-512.png'
+  './level.mjs', './remote.mjs', './alerta.html', './alerta.mjs', './icon-192.png', './icon-512.png'
 ].map((file) => new URL(file, self.registration.scope).href);
 const entryPage = appFiles[0];
 

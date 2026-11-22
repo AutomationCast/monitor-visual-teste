@@ -1,4 +1,5 @@
 import { AlarmTimer, estimateLevel } from './level.mjs';
+import { connectPairing, newPairing } from './remote.mjs';
 
 const $ = (id) => document.getElementById(id);
 const video = $('video');
@@ -17,6 +18,10 @@ let cameraRequest = 0;
 let opening = false;
 let recent = [];
 let lastVideoTime = null;
+let pairing, heartbeat;
+let pairingGeneration = 0;
+let remoteLevel = null;
+let remoteAlarm = false;
 
 try {
   const settings = JSON.parse(localStorage.getItem(storageKey)) ?? {};
@@ -113,11 +118,13 @@ $('silence').addEventListener('click', () => {
 
 function resetAlarm() {
   alarm.reset();
+  remoteAlarm = false;
   stopSound();
   status('alarm-status', 'Alarme local após 30 s acima do limite.');
 }
 
 function showLevel(level) {
+  remoteLevel = level;
   $('level').value = level === null ? '—' : level + '%';
   $('meter').value = level ?? 0;
   $('line').hidden = level === null || level === 0 || level === 100;
@@ -315,7 +322,8 @@ function sample() {
   showLevel(filtered);
   const elapsed = alarm.update(filtered === null || measured <= +limit.value ? null : filtered,
     +limit.value, performance.now());
-  if (elapsed === 30000) {
+  remoteAlarm = elapsed === 30000;
+  if (remoteAlarm) {
     if (alarm.silenced) status('alarm-status', 'Alarme silenciado até o nível baixar.');
     else {
       if (!tone || testTimeout !== undefined) sound();
@@ -335,7 +343,71 @@ document.addEventListener('visibilitychange', () => {
   resetAlarm();
   if (!document.hidden) void keepScreenOn();
 });
-window.addEventListener('pagehide', () => stopCamera());
+function stopPairing() {
+  pairingGeneration++;
+  clearInterval(heartbeat);
+  pairing?.close();
+  pairing = null;
+  $('pair').textContent = 'Gerar link de alerta';
+  $('pair-link').value = '';
+  $('pair-link').hidden = $('copy-pair').hidden = true;
+  status('pair-status', 'Compartilhamento encerrado.');
+}
+
+async function sendReading() {
+  try {
+    await pairing?.send(drag || document.hidden ? null : remoteLevel, remoteAlarm && !drag && !document.hidden);
+  } catch {
+    status('pair-status', 'Falha no envio da leitura. O alarme local continua funcionando.');
+  }
+}
+
+$('pair').addEventListener('click', async () => {
+  if (!$('pair-link').hidden) {
+    stopPairing();
+    return;
+  }
+  const generation = ++pairingGeneration;
+  $('pair').disabled = true;
+  status('pair-status', 'Conectando ao canal de alerta…');
+  try {
+    const secret = newPairing();
+    const connection = await connectPairing(secret, (online) => {
+      if (generation !== pairingGeneration) return;
+      status('pair-status', online ? 'Canal de alerta conectado.' : 'Canal indisponível. Reconectando…');
+    });
+    if (generation !== pairingGeneration) {
+      connection.close();
+      return;
+    }
+    pairing = connection;
+    heartbeat = setInterval(sendReading, 1500);
+    const link = new URL('./alerta.html', location.href);
+    link.hash = secret;
+    $('pair-link').value = link.href;
+    $('pair-link').hidden = $('copy-pair').hidden = false;
+    $('pair').textContent = 'Encerrar compartilhamento';
+  } catch {
+    status('pair-status', 'Não foi possível iniciar o canal. Confira a internet e tente de novo.');
+  } finally {
+    $('pair').disabled = false;
+  }
+});
+
+$('copy-pair').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('pair-link').value);
+    status('pair-status', 'Link copiado. Envie em privado ao segundo celular.');
+  } catch {
+    $('pair-link').select();
+    status('pair-status', 'Selecione e copie o endereço exibido.');
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  stopPairing();
+  stopCamera();
+});
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
   installPrompt = event;

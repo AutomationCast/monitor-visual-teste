@@ -1,0 +1,101 @@
+import { connectPairing } from './remote.mjs';
+
+const $ = (id) => document.getElementById(id);
+let connection, timeout, audio, tone, wakeLock;
+let latestAlarm = false;
+let silenced = false;
+let soundEnabled = false;
+let leaving = false;
+
+function refreshSound() {
+  if ((!latestAlarm || silenced || document.hidden || !soundEnabled) && tone) {
+    tone.stop();
+    tone.disconnect();
+    tone = null;
+  }
+  if (latestAlarm && !silenced && !document.hidden && soundEnabled && !tone && audio.state === 'running') {
+    tone = audio.createOscillator();
+    tone.frequency.value = 740;
+    const volume = audio.createGain();
+    volume.gain.value = 0.16;
+    tone.connect(volume).connect(audio.destination);
+    tone.addEventListener('ended', () => volume.disconnect(), { once: true });
+    tone.start();
+  }
+  $('silence').disabled = !latestAlarm || silenced;
+  $('alarm-status').textContent = latestAlarm
+    ? silenced ? 'Alarme silenciado.' : tone ? 'Alarme remoto ativo.' : 'Alarme remoto ativo. Ative o som.'
+    : soundEnabled ? 'Som ativado.' : '';
+}
+
+async function keepScreenOn() {
+  if (document.hidden || (wakeLock && !wakeLock.released)) return;
+  try {
+    const lock = await navigator.wakeLock.request('screen');
+    if (document.hidden || (wakeLock && !wakeLock.released)) await lock.release();
+    else wakeLock = lock;
+  } catch {
+    // O ajuste de tela do aparelho continua disponível.
+  }
+}
+
+$('enable').addEventListener('click', async () => {
+  try {
+    audio ??= new AudioContext();
+    await audio.resume();
+    soundEnabled = audio.state === 'running';
+    $('enable').disabled = soundEnabled;
+    refreshSound();
+    void keepScreenOn();
+  } catch {
+    $('alarm-status').textContent = 'Som indisponível. Tente ativá-lo novamente.';
+  }
+});
+$('silence').addEventListener('click', () => {
+  silenced = true;
+  refreshSound();
+});
+
+function render(level, alarm, status) {
+  $('level').value = level === null ? '—' : level + '%';
+  $('meter').value = level ?? 0;
+  $('connection').textContent = status;
+  latestAlarm = alarm;
+  if (!alarm && level !== null) silenced = false;
+  refreshSound();
+}
+
+document.addEventListener('visibilitychange', () => {
+  refreshSound();
+  if (!document.hidden && soundEnabled) void keepScreenOn();
+});
+window.addEventListener('pagehide', () => {
+  leaving = true;
+  clearTimeout(timeout);
+  connection?.close();
+  render(null, false, 'Painel encerrado.');
+});
+window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+
+const secret = location.hash.slice(1);
+if (/^[a-f0-9]{64}$/.test(secret)) {
+  $('connection').textContent = 'Conectando…';
+  $('enable').disabled = false;
+  try {
+    connection = await connectPairing(secret, (online) => {
+      if (!online) {
+        clearTimeout(timeout);
+        render(null, false, 'Conexão interrompida. Reconectando…');
+      } else if ($('level').value === '—') {
+        $('connection').textContent = 'Conectado. Aguardando o sensor…';
+      }
+    }, (reading) => {
+      clearTimeout(timeout);
+      render(reading.level, reading.alarm, reading.level === null ? 'Sensor sem leitura válida.' : 'Recebendo leitura do sensor.');
+      timeout = setTimeout(() => render(null, false, 'Sem sinal recente do sensor.'), 6000);
+    });
+    if (leaving) connection.close();
+  } catch {
+    render(null, false, 'Não foi possível conectar. Confira a internet e recarregue o painel.');
+  }
+}

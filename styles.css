@@ -35,3 +35,5 @@ p:empty { display: none; }
 details { margin-top: 1rem; border-top: 1px solid #38505a; padding-top: .7rem; }
 summary { cursor: pointer; }
 details label { margin-top: .7rem; }
+
+#pair-link { width: 100%; margin-top: .65rem; padding: .55rem; font: inherit; }

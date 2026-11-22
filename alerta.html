@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#101e24">
+  <title>Alerta do Helicoidal</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="icon" href="./icon-192.png">
+  <script type="module" src="./alerta.mjs"></script>
+</head>
+<body>
+  <main>
+    <header><h1>Alerta do Helicoidal</h1></header>
+    <section class="controls" aria-label="Leitura remota">
+      <label for="level">Nível recebido</label>
+      <output id="level">—</output>
+      <progress id="meter" max="100" value="0" aria-label="Nível recebido"></progress>
+      <p id="connection" role="status">Abra o link de pareamento gerado no celular sensor.</p>
+      <p id="alarm-status" role="status"></p>
+      <div class="buttons">
+        <button id="enable" class="primary" disabled>Ativar som</button>
+        <button id="silence" disabled>Silenciar</button>
+      </div>
+      <p>Mantenha esta página visível e a tela ligada para receber o som.</p>
+    </section>
+  </main>
+</body>
+</html>
